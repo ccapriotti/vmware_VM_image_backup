@@ -1,0 +1,1 @@
+15 0 * * sat /bin/uws_rsy_datastore.sh -c=/etc/rsy_datastore/sample_config.cfg  -s=0 -h=10.0.1.8  -f=/mnt/zpool0/vmdata0 -t=/mnt/node2/ -i=/bin/pre_run_script.sh -o=post_run_script.sh
