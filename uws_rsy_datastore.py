@@ -168,22 +168,23 @@ if len(sys.argv) == 0:
 
 
 for i in xrange(len(sys.argv)):
-	#print ("Argument # %d : %s" % (i, str(sys.argv[i])))
-	if str(sys.argv[i])[0:3] == "-c=":
-		CONFIG=str(sys.argv[i])[3:len(str(sys.argv[i])) +1]
-		if len(CONFIG) == 0 or NOT os.path.isfile(CONFIG):
-			print "BAD PARAMETER -c= : Specified file path is invalid or file does not exist: %s " % CONFIG
+	arg.content=str(sys.argv[i])[3:len(str(sys.argv[i])) +1]
+	arg.option=str(sys.argv[i])[0:3]
+	if arg.option == "-c=" :
+		CONFIG=arg.content
+		if arg.content.len() == 0 or not os.path.isfile(CONFIG):
+			print "BAD PARAMETER -c= : Specified file path is invalid or file does not exist: " + CONFIG
 			cleanexit(4)
-	elif str(sys.argv[i])[0:3] == "-h=":
-		ESXI=str(sys.argv[i])[3:len(str(sys.argv[i])) +1]
-	elif str(sys.argv[i])[0:3] == "-f=":
-		FROMPATH=str(sys.argv[i])[3:len(str(sys.argv[i])) +1]
-	elif str(sys.argv[i])[0:3] == "-t=":
-		TARGETFOLDER=str(sys.argv[i])[3:len(str(sys.argv[i])) +1]
-	elif str(sys.argv[i])[0:3] == "-i=":
-		PRESCRIPT=str(sys.argv[i])[3:len(str(sys.argv[i])) +1]
-	elif str(sys.argv[i])[0:3] == "-o=":
-		POSCRIPT=str(sys.argv[i])[3:len(str(sys.argv[i])) +1]
+	elif arg.option == "-h=":
+		ESXI=arg.content
+	elif arg.option == "-f=":
+		FROMPATH=arg.content
+	elif arg.option == "-t=":
+		TARGETFOLDER=arg.content
+	elif arg.option == "-i=":
+		PRESCRIPT=arg.content
+	elif arg.option == "-o=":
+		POSCRIPT=arg.content
 
 
 # extract the name of the config file, w/o path or extension
@@ -191,16 +192,16 @@ for i in xrange(len(sys.argv)):
 
 LOCKBASE=os.path.basename(CONFIG).rsplit(".",1)[0]
 
-if NOT os.path.exists(/var/log/uws_rsy_datastore):		# if uws_rsy_datastore does not exist
-	if NOT os.makedirs(/var/log/uws_rsy_datastore):		# if creating uws_rsy_datastore fails
-		LOGFILE="/var/log/uws_rsy_datastore/uws_backup."+LOCKBASE+"_"+ time.strftime("%Y%m%d%H%M") + ".log"
-	else												# if creating uws_rsy_datastore is OK
+if not os.path.exists("/var/log/uws_rsy_datastore") :		# if uws_rsy_datastore does not exist
+	if not os.makedirs("/var/log/uws_rsy_datastore"):		# if creating uws_rsy_datastore fails
+		LOGFILE="/var/log/uws_rsy_datastore/uws_backup." + LOCKBASE+ "_"  + time.strftime("%Y%m%d%H%M") + ".log"
+	else :													# if creating uws_rsy_datastore is OK
 		LOGFILE="/var/log/uws_rsy_datastore/uws_backup/"+LOCKBASE+"_"+ time.strftime("%Y%m%d%H%M") + ".log"	   
-elsif NOT os.path.isdir(/var/log/uws_rsy_datastore):	# if by accident uws_rsy_datastore is a file
-	LOGFILE="/var/log/uws_rsy_datastore/uws_backup."+LOCKBASE+"_"+ time.strftime("%Y%m%d%H%M") + ".log"
+elif not os.path.isdir("/var/log/uws_rsy_datastore") :			# if by accident uws_rsy_datastore is a file
+	LOGFILE="/var/log/uws_rsy_datastore/uws_backup." + LOCKBASE + "_" + time.strftime("%Y%m%d%H%M") + ".log"
 	print "Warining !!! /var/log/uws_rsy_datastore if not a directory ! Cannot save log files ! Will continue anyway. Check /var/log for strange entries"
-else													# if all is normal
-	LOGFILE="/var/log/uws_rsy_datastore/uws_backup/"+LOCKBASE+"_"+ time.strftime("%Y%m%d%H%M") + ".log"
+else :														# if all is normal
+	LOGFILE="/var/log/uws_rsy_datastore/uws_backup/" + LOCKBASE +  "_"+ time.strftime("%Y%m%d%H%M") + ".log"
 
 
 
@@ -246,7 +247,7 @@ if FROMPATH[0:1] != "/" :
    print "BAD PARAMETER: malformed source path: " + FROMPATH 
    cleanexit( 4)
 
-if FROMPATH:-1] != "/":
+if FROMPATH[:-1] != "/":
    FROMPATH = FROMPATH + "/" 
 
 source = FROMPATH
@@ -278,8 +279,8 @@ if SUSPEND != 0 and SUSPEND != 1 :
 #
 
 
-if NOT os.path.exists(/var/lock/uws_rsy_datastore):		# if folder does not exist
-	if NOT os.makedirs(/var/lock/uws_rsy_datastore):		# if creating it fails
+if not os.path.exists("/var/lock/uws_rsy_datastore"):		# if folder does not exist
+	if not os.makedirs("/var/lock/uws_rsy_datastore"):		# if creating it fails
 		print time.strftime("%Y.%m.%d.%H:%M:%S") + " - ERROR. cannot create lock folder /var/lock/uws_rsy_datastore. Exiting."
 		cleanexit(6)
 		
@@ -287,14 +288,14 @@ LOCKBASE = "/var/lock/uws_rsy_datastore/" + LOCKBASE + ".lock"
 if os.path.isfile(LOCKBASE) : 
    print time.strftime("%Y.%m.%d.%H:%M:%S") + " - ERROR. Lock file present for backup set " + CONFIG
    cleanexit(6)
-else
-   lock_file = open("LOCKBASE","w")
+else :
+   lock_file = open(LOCKBASE,"w")
    
 ## Run Pre script if file exists - calls shell
 
 if os.path.isfile(PRESCRIPT) :
    subprocess.call(PRESCRIPT, shell=True)
-else
+else :
    print time.strftime("%Y.%m.%d.%H:%M:%S") + " - WARNING: pre script invalid or empty: " + PRESCRIPT + ". Processing will continue anyway."
 
 
@@ -303,52 +304,36 @@ else
 # contents will be:
 # [vm code, folder name, vm name, power status]
 
-"""
-## Original instruction block in bash
-
-int=0
-while IFS=, read vmid vmname dir  
-do
-   vmid="${vmid#"${vmid%%[![:space:]]*}"}"
-   if [[ "${vmid:0:1}" != "#" ]] && [ ! -z $vmid ] ; then
-      vmcode[$int]=$vmid
-      local[$int]=$dir
-      vname[$int]=$vmname
-      ((int++))
-   fi
-   # print $int $vmid $dir $vmname ${vmcode[$int]} ${local[$int]} ${vname[$int]}
-done < $CONFIG
-"""
-
 
 curent.line = ""
 vm.individual=[]
-vmdata.2d=[]
+vmdata2d=[]
 config.file = open(CONFIG,r)
 
 
 for current.line in config.file:
 	current.line = current.line.rstrip()
+	current.line = current.line.lstrip()
 	if len(current.line) > 0 and current.line[0:1] != "#" :
 		vm.individual.append() = current.line.strip(",")
 		vm.individual.append() = "un"						## assigns UN to the power status, for "UNknown"
-		vmdata.2d.append() = vm.individual 
+		vmdata2d.append() = vm.individual 
 		#assigns values to dictionary
 		
 config.file.close()
 
 int = 0
-for curent.vm in vmdata.2d :
-	vmid=curent.vm[0][0]
-	# pwr_read =o s.system("/bin/bash/ssh", " root@$ESXI  vim-cmd vmsvc/power.getstate " + vmid)
-   pwr_read = subprocess.call("ssh root@" + ESXI + " \'vim-cmd vmsvc/power.getstate " + vmid + " \`", shell=True)
-   pwr_read = pwr_read.lower()
-   vmid=curent.vm[0][3] = pwr_read[0:2]
-   #print ${vname[$int]} ${vmpwrstate[$int]} ${vmcode[$int]}
-   int = int + 1
+for curent.vm in vmdata2d :
+	vmid=curent.vm[0]
+	# pwr_read =os.system("/bin/bash/ssh", " root@$ESXI  vim-cmd vmsvc/power.getstate " + vmid)
+	pwr_read = subprocess.call("ssh root@" + ESXI + " \'vim-cmd vmsvc/power.getstate " + vmid + " \`", shell=True)
+	pwr_read = pwr_read.lower()
+	vmdata2d[int][3] = pwr_read[0:2]
+	#print ${vname[$int]} ${vmpwrstate[$int]} ${vmcode[$int]}
+	int = int + 1
 
 if int == 0 : 
-   print time.strftime("%Y.%m.%d.%H:%M:%S") + " - no VMs to process. Check configuration file.' 
+   print time.strftime("%Y.%m.%d.%H:%M:%S") + " - no VMs to process. Check configuration file."
    #rm -f /var/lock/uws_rsy_datastore/$LOCKBASE.lock
    delete.lock.file = TRUE
    cleanexit( 0)
@@ -362,94 +347,68 @@ if int == 0 :
 
 
 
-""" ATTENTION !!!!! ATTENTION !!!! ATTENTION !!!
-
-THE CODE BELOW HAS NOT BEEN TRANSLATED TO PYTHON !!!!
-
-DO NOT USE !!!
-
-""" 
-
-
-
-
-
-
-
 int = 0
 if SUSPEND == 0 :
-   print time.strftime("%Y.%m.%d.%H:%M:%S") + " - Batch suspending servers.' 
-   for curent.vm in vmdata.2d :
-      vmid=vmdata.2d[int][0]
-      dir=vmdata.2d[int][1]
-      vmname=vmdata.2d[int][2]
+   print time.strftime("%Y.%m.%d.%H:%M:%S") + " - Batch suspending servers."
+   for curent.vm in vmdata2d :
+      vmid=curent.vm[0]
+      dir=curent.vm[1]
+      vmname=curent.vm[2]
+      pwstat = curent.vm[3]
       print time.strftime("%Y.%m.%d.%H:%M:%S") + " - Suspending " + vmname + vmid   
-      if vmdata.2d[int][3] = "on" :
-         suspend_reult=subprocess.call("ssh root@" + ESXI + " \'vim-cmd vmsvc/power.suspend  " + vmid + " \'", shell=True)
-         # ssh root@$ESXI "vim-cmd vmsvc/power.suspend $vmid" 
-         if suspend_result != 0 :
-            print time.strftime("%Y.%m.%d.%H:%M:%S") + " - VM " + vmdata.2d[int][2] + 'failed to be suspended. Aborting operation.'
-              
-	        for ((int=0; int<${#vmcode[@]}; int++))
-	        do
-	           print time.strftime("%Y.%m.%d.%H:%M:%S") + " - Resuming' ${vname[$int]} $vmid   
-	           ssh root@$ESXI "vim-cmd vmsvc/power.on $vmid" 
-               if [ ! $? -eq 0 ] ; then
-                  print time.strftime("%Y.%m.%d.%H:%M:%S") + " - ERROR resuming VM' ${vname[$int]} $vmid '- $?'  
-	        done
-	        cleanexit( 255
-      else
-         print time.strftime("%Y.%m.%d.%H:%M:%S") + " - Already suspended -' ${vname[$int]} $vmid   
+      if pwstat == "on" :
+		suspend_reult=subprocess.call("ssh root@" + ESXI + " \'vim-cmd vmsvc/power.suspend  " + vmid + " \'", shell=True)
+		# ssh root@$ESXI "vim-cmd vmsvc/power.suspend $vmid" 
+		if suspend_result != 0 :				## if suspend VM fails, abort operation.
+			print time.strftime("%Y.%m.%d.%H:%M:%S") + " - VM " + vmdata2d[int][2] + " failed to be suspended. Aborting operation."
+			int = 0 
+	        for vmid in vmdata2d :
+	            vmid=vmdata2d[int][0]
+	    	    print time.strftime("%Y.%m.%d.%H:%M:%S") + " - Resuming " + vmdata2d[int][2] + vmid   
+			    resume_state = subprocess.call("ssh root@" + ESXI + " \'vim-cmd vmsvc/power.on " + vmid + " \`", shell=True)
+        	    if resume_state != 0 :
+                    print time.strftime("%Y.%m.%d.%H:%M:%S") + " - ERROR " resume_state + "resuming VM " + vmdata2d[int][2] + vmid  
+	    	cleanexit( 255)
+      else :
+         print time.strftime("%Y.%m.%d.%H:%M:%S") + " - Already suspended - " + vmdata2d[int][2] + vmid
 
 
 
 ## start copying files. Pauses VMs if -s=1 was defined on command line
 
-
-for ((int=0; int<${#vmcode[@]}; int++))
-do 
-   dir=${local[$int]}
-   vmid=${vmcode[$int]}
+int = 0
+for curent.vm in vmdata2d :
+	vmid=curent.vm[0]
+	dir=curent.vm[1]
+	vmname=curent.vm[2]
+	vmpwrstate=curent.vm[3]
    print " " 
-   print time.strftime("%Y.%m.%d.%H:%M:%S") + " - Starting to process      ' ${vname[$int]} '  ---------->>>'  
-   #powerstate=0
+   print time.strftime("%Y.%m.%d.%H:%M:%S") + " - Starting to process      " + vmname + "  ---------->>>"  
    suspend_result=0
-   #pwr_read=$(ssh root@$ESXI "vim-cmd vmsvc/power.getstate $vmid")
-   #pwr_read=${pwr_read:(-2)}
 
-
-   if [ $SUSPEND -eq 1 ] ; then 
-      if [ ${vmpwrstate[$int]} = "on" ]  ; then
+   if SUSPEND == 1 and vmpwrstate == "on" :
          #powerstate=1
-         print time.strftime("%Y.%m.%d.%H:%M:%S") + " - Suspending '  ${vname[$int]} $vmid   
-         ssh root@$ESXI "vim-cmd vmsvc/power.suspend $vmid" 
-         suspend_result=$?
-      fi
-   fi
+         print time.strftime("%Y.%m.%d.%H:%M:%S") + " - Suspending " + vmname + " " + vmid   
+         suspend_result=subprocess.call("ssh root@" + ESXI + " \'vim-cmd vmsvc/power.suspend  " + vmid + " \'", shell=True) 
 
-   if [ $suspend_result -eq 0 ] ; then
-      print time.strftime("%Y.%m.%d.%H:%M:%S") + " - VM' ${vname[$int]} 'suspended. Starting copy.'  
+   if suspend_result == 0 :
+      print time.strftime("%Y.%m.%d.%H:%M:%S") + " - VM " + vmname + " suspended. Starting copy." 
       #rsync -Wav --exclude=*.log --exclude=*.vswp --exclude=".*" --exclude=*.vmss --exclude=*.hlog "$source$dir" "$TARGETFOLDER" 
-      rsync -Wav  "$source$dir" "$TARGETFOLDER"  
-      if [ ! $? -eq 0 ] ; then
-         print time.strftime("%Y.%m.%d.%H:%M:%S") + " ERROR copying VM files - ' $?  
-      else
-         print time.strftime("%Y.%m.%d.%H:%M:%S") + " - Backup finished. ' ${vname[$int]} $vmid.  
-      fi
+      copy.result = subprocess.call("rsync -Wav " + source + dir + TARGETFOLDER, shell=True)  
+      if copy.result !=  0 :
+         print time.strftime("%Y.%m.%d.%H:%M:%S") + " ERROR " + copy.result + " copying VM files for " + vmname
+      else:
+         print time.strftime("%Y.%m.%d.%H:%M:%S") + " - Backup finished. " + vmname + " " +vmid  
 
-      if [ $SUSPEND -eq 1 ] && [ ${vmpwrstate[$int]} = "on" ] ; then
-         print time.strftime("%Y.%m.%d.%H:%M:%S") + " - Resuming VM ' ${vname[$int]} $vmid.  
-         ssh root@$ESXI "vim-cmd vmsvc/power.on $vmid" 
-         if [ ! $? -eq 0 ] ; then
-            print time.strftime("%Y.%m.%d.%H:%M:%S") + " - ERROR resuming VM ' ${vname[$int]} $vmid ' - $?'  
-         fi
-      fi
-      
-      print time.strftime("%Y.%m.%d.%H:%M:%S") + " - End processing files for ' ${vname[$int]} $vmid '----------<<<'  
-   else
-      print time.strftime("%Y.%m.%d.%H:%M:%S") + " - Backup could not be done. ERROR suspending power on VM ' ${vname[$int]} $vmid  
-   fi
-done
+      if SUSPEND == 1 and vmpwrstate == "on" :
+         print time.strftime("%Y.%m.%d.%H:%M:%S") + " - Resuming VM " + vmname + " " +vmid   
+         resume.result = subprocess.call("ssh root@" + ESXI + " \'vim-cmd vmsvc/power.on " + " " + vmid + "\'"
+         if resume.result !=  0 :
+            print time.strftime("%Y.%m.%d.%H:%M:%S") + " - ERROR " + resume.result + " resuming VM " + vmname + " " +vmid  
+         
+      print time.strftime("%Y.%m.%d.%H:%M:%S") + " - End processing files for " + vmname + " " +vmid + " ----------<<<"
+   else:
+      print time.strftime("%Y.%m.%d.%H:%M:%S") + " - Backup could not be done. ERROR suspending power on VM " + vmname + " " +vmid  
 
 
 ### 
@@ -457,41 +416,33 @@ done
 #  we resume them all now.
 #
 
-OPRESULT=0
-
-if [ $SUSPEND -eq 0 ] ; then
-   OPRESULT=${#vmcode[@]}
-   for ((int=0; int<${#vmcode[@]}; int++))
-   do 
-      vmid=${vmcode[$int]}
-      dir=${local[$int]}
-      vmname=${vname[$int]}
-      if [ ${vmpwrstate[$int]} = "on" ] ; then
-         print time.strftime("%Y.%m.%d.%H:%M:%S") + " - Resuming VM ' ${vname[$int]} $vmid.  
-         ssh root@$ESXI "vim-cmd vmsvc/power.on $vmid" 
-         if [ ! $? -eq 0 ] ; then
-            print time.strftime("%Y.%m.%d.%H:%M:%S") + " - ERROR resuming VM ' ${vname[$int]} $vmid ' - $?'  
-         else
-	    ((OPRESULT--))
-         fi
-      else
-	  ((OPRESULT--))
-      fi
-   done
-fi
-
-if [ $OPRESULT -eq 0 ] || [ $SUSPEND -eq 1 ] ; then
-   rm -f /var/lock/uws_rsy_datastore/$LOCKBASE.lock
-   
-
-   if os.path.isfile(POSCRIPT) :
-   os.system("/bin/bash", POSCRIPT)
-else
-   print time.strftime("%Y.%m.%d.%H:%M:%S") + " - WARNING: post script invalid or empty: " + POSCRIPT + ". Processing will continue anyway."
+OPRESULT = 0
+if SUSPEND == 0 :
+   for curent.vm in vmdata2d : 
+    	vmid=curent.vm[0]
+	    dir=curent.vm[1]
+		vmname=curent.vm[2]
+      	if curent.vm[3] = "on" :
+        	print time.strftime("%Y.%m.%d.%H:%M:%S") + " - Resuming VM " + vmname + " " +vmid  
+         	#ssh root@$ESXI "vim-cmd vmsvc/power.on $vmid" 
+         	resume.result = subprocess.call("ssh root@" + ESXI + " \'vim-cmd vmsvc/power.on " + " " + vmid + "\'", shell=True)
+         	if resume.result != 0 :
+            	print time.strftime("%Y.%m.%d.%H:%M:%S") + " - ERROR " + resume.result + "resuming VM " + vmname + " " +vmid 
+            	OPRESULT = OPRESULT +1 
+		else:
+	    	OPRESULT = OPRESULT +1 
       
+
+if OPRESULT == 0  and SUSPEND == 1 :
+	delete.lock.file = TRUE
    
+
+if os.path.isfile(POSCRIPT) :
+   subprocess.call(POSCRIPT, shell=True)
+else:
+   print time.strftime("%Y.%m.%d.%H:%M:%S") + " - WARNING: post script invalid or empty: " + POSCRIPT + ". Processing will continue anyway."
    cleanexit(0)
-fi
+
 
 cleanexit(255)
 
