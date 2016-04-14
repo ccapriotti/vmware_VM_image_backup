@@ -318,10 +318,11 @@ for current.line in config.file:
 		vm.individual.append() = current.line.strip(",")
 		vm.individual.append() = "un"						## assigns UN to the power status, for "UNknown"
 		vmdata2d.append() = vm.individual 
-		#assigns values to dictionary
+		
 		
 config.file.close()
-
+## Gathers power state of all VMs listed in the configuration file
+#  and stores in our matrix.
 int = 0
 for curent.vm in vmdata2d :
 	vmid=curent.vm[0]
@@ -329,7 +330,6 @@ for curent.vm in vmdata2d :
 	pwr_read = subprocess.call("ssh root@" + ESXI + " \'vim-cmd vmsvc/power.getstate " + vmid + " \`", shell=True)
 	pwr_read = pwr_read.lower()
 	vmdata2d[int][3] = pwr_read[0:2]
-	#print ${vname[$int]} ${vmpwrstate[$int]} ${vmcode[$int]}
 	int = int + 1
 
 if int == 0 : 
@@ -345,70 +345,82 @@ if int == 0 :
 #
 #
 
-
-
-int = 0
 if SUSPEND == 0 :
-   print time.strftime("%Y.%m.%d.%H:%M:%S") + " - Batch suspending servers."
-   for curent.vm in vmdata2d :
-      vmid=curent.vm[0]
-      dir=curent.vm[1]
-      vmname=curent.vm[2]
-      pwstat = curent.vm[3]
-      print time.strftime("%Y.%m.%d.%H:%M:%S") + " - Suspending " + vmname + vmid   
-      if pwstat == "on" :
-		suspend_reult=subprocess.call("ssh root@" + ESXI + " \'vim-cmd vmsvc/power.suspend  " + vmid + " \'", shell=True)
-		# ssh root@$ESXI "vim-cmd vmsvc/power.suspend $vmid" 
-		if suspend_result != 0 :				## if suspend VM fails, abort operation.
-			print time.strftime("%Y.%m.%d.%H:%M:%S") + " - VM " + vmdata2d[int][2] + " failed to be suspended. Aborting operation."
-			int = 0 
-	        for vmid in vmdata2d :
-	            vmid=vmdata2d[int][0]
-	    	    print time.strftime("%Y.%m.%d.%H:%M:%S") + " - Resuming " + vmdata2d[int][2] + vmid   
-			    resume_state = subprocess.call("ssh root@" + ESXI + " \'vim-cmd vmsvc/power.on " + vmid + " \`", shell=True)
-        	    if resume_state != 0 :
-                    print time.strftime("%Y.%m.%d.%H:%M:%S") + " - ERROR " resume_state + "resuming VM " + vmdata2d[int][2] + vmid  
-	    	cleanexit( 255)
-      else :
-         print time.strftime("%Y.%m.%d.%H:%M:%S") + " - Already suspended - " + vmdata2d[int][2] + vmid
+	print time.strftime("%Y.%m.%d.%H:%M:%S") + " - Batch suspending servers."
+	for curent.vm in vmdata2d :
+		vmid=curent.vm[0]
+		vmname=curent.vm[2]
+		pwstat = curent.vm[3]
+		print time.strftime("%Y.%m.%d.%H:%M:%S") + " - Suspending %s %s" % (vmname,vmid)   
+		if pwstat == "on" :
+			suspend_reult = subprocess.call("ssh root@" + ESXI + " \'vim-cmd vmsvc/power.suspend " + vmid + " \'", shell=True)
+			# ssh root@$ESXI "vim-cmd vmsvc/power.suspend $vmid" 
+			if suspend_result != 0 :				## if suspend VM fails, abort operation.
+				print time.strftime("%Y.%m.%d.%H:%M:%S") + " - VM " + vmname + " failed to be suspended. Aborting operation."
+				for curent.vm in vmdata2d :
+					vmid=curent.vm[0]
+					vmname=curent.vm[2]
+					pwstat = curent.vm[3]
+					if pwstat == "on" :			## resume servers that were initially on
+						print time.strftime("%Y.%m.%d.%H:%M:%S") + " - Resuming %s %s " % (vmname,vmid)   
+						resume_result = subprocess.call("ssh root@" + ESXI + " \'vim-cmd vmsvc/power.on " + vmid + " \`", shell=True)
+					if resume_result != 0 :
+						print time.strftime("%Y.%m.%d.%H:%M:%S") + " - ERROR " + resume_result + "resuming VM " + vmname + vmid
+				cleanexit( 255)
+		elif pwstat == "un" :
+			print time.strftime("%Y.%m.%d.%H:%M:%S") + " - WARNING ! Power state unknown for - " + vmname + vmid	+ " - Trying suspend and copy ayway"
+			suspend_reult = subprocess.call("ssh root@" + ESXI + " \'vim-cmd vmsvc/power.suspend " + vmid + " \'", shell=True)
+		else :
+			print time.strftime("%Y.%m.%d.%H:%M:%S") + " - Already suspended - " + vmname + vmid
+		
 
 
-
-## start copying files. Pauses VMs if -s=1 was defined on command line
+## start copying files. Pauses VMs - individually, before copying - if -s=1 was defined on command line
 
 int = 0
 for curent.vm in vmdata2d :
 	vmid=curent.vm[0]
-	dir=curent.vm[1]
+	vmdir=curent.vm[1]
 	vmname=curent.vm[2]
 	vmpwrstate=curent.vm[3]
-   print " " 
-   print time.strftime("%Y.%m.%d.%H:%M:%S") + " - Starting to process      " + vmname + "  ---------->>>"  
-   suspend_result=0
+	print " " 
+	print time.strftime("%Y.%m.%d.%H:%M:%S") + " - INFO: Starting to process      " + vmname + "  ---------->>>"  
+	suspend_result=0
+	
+	## If individual pause/resume was used (SUSPEND == 1), and VMs fail to pause or have a unknown power state, tries to pause and copy anyway.
 
-   if SUSPEND == 1 and vmpwrstate == "on" :
-         #powerstate=1
-         print time.strftime("%Y.%m.%d.%H:%M:%S") + " - Suspending " + vmname + " " + vmid   
-         suspend_result=subprocess.call("ssh root@" + ESXI + " \'vim-cmd vmsvc/power.suspend  " + vmid + " \'", shell=True) 
+	if SUSPEND == 1 and vmpwrstate != "of" :
+		if vmpwrstate == "un" :
+			print time.strftime("%Y.%m.%d.%H:%M:%S") + " - WARNING: Power state unknown for - " + vmname + vmid	+ " - Trying suspend and copy ayway"
+		elif vmpwrstate == "on" :
+			print time.strftime("%Y.%m.%d.%H:%M:%S") + " - INFO: Suspending " + vmname + " " + vmid
+		else :
+			print time.strftime("%Y.%m.%d.%H:%M:%S") + " - INFO: %s %s already suspended or off " % (vmname, vmid)
+			   
+		suspend_result=subprocess.call("ssh root@" + ESXI + " \'vim-cmd vmsvc/power.suspend  " + vmid + " \'", shell=True)
+		if suspend_result == 0 :
+			print time.strftime("%Y.%m.%d.%H:%M:%S") + " - INFO: VM " + vmname + " suspended. Starting copy."
+		else :
+			print time.strftime("%Y.%m.%d.%H:%M:%S") + " - WARNING: VM " + vmname + " failed to be suspended. Its original power state was %s Starting copy anyway." % (vmpwrstate)
+	
+	## Time to actually copy the files - works on the "home" directory only, and not on disks saved outside the main structure.
+	#	in other words, the software does not read the VM configuration file.
+	
+	print time.strftime("%Y.%m.%d.%H:%M:%S") + " - INFO: VM " + vmname + "-  Starting copy." 
+	#rsync -Wav --exclude=*.log --exclude=*.vswp --exclude=".*" --exclude=*.vmss --exclude=*.hlog "$source$vmdir" "$TARGETFOLDER" 
+	copy.result = subprocess.call("rsync -Wav " + source + vmdir + TARGETFOLDER, shell=True)  
+	if copy.result !=  0 :
+		print time.strftime("%Y.%m.%d.%H:%M:%S") + " - ERROR " + copy.result + " copying VM files for " + vmname
+	else:
+		print time.strftime("%Y.%m.%d.%H:%M:%S") + " - INFO: Backup finished. " + vmname + " " +vmid  
 
-   if suspend_result == 0 :
-      print time.strftime("%Y.%m.%d.%H:%M:%S") + " - VM " + vmname + " suspended. Starting copy." 
-      #rsync -Wav --exclude=*.log --exclude=*.vswp --exclude=".*" --exclude=*.vmss --exclude=*.hlog "$source$dir" "$TARGETFOLDER" 
-      copy.result = subprocess.call("rsync -Wav " + source + dir + TARGETFOLDER, shell=True)  
-      if copy.result !=  0 :
-         print time.strftime("%Y.%m.%d.%H:%M:%S") + " ERROR " + copy.result + " copying VM files for " + vmname
-      else:
-         print time.strftime("%Y.%m.%d.%H:%M:%S") + " - Backup finished. " + vmname + " " +vmid  
-
-      if SUSPEND == 1 and vmpwrstate == "on" :
-         print time.strftime("%Y.%m.%d.%H:%M:%S") + " - Resuming VM " + vmname + " " +vmid   
-         resume.result = subprocess.call("ssh root@" + ESXI + " \'vim-cmd vmsvc/power.on " + " " + vmid + "\'"
-         if resume.result !=  0 :
-            print time.strftime("%Y.%m.%d.%H:%M:%S") + " - ERROR " + resume.result + " resuming VM " + vmname + " " +vmid  
-         
-      print time.strftime("%Y.%m.%d.%H:%M:%S") + " - End processing files for " + vmname + " " +vmid + " ----------<<<"
-   else:
-      print time.strftime("%Y.%m.%d.%H:%M:%S") + " - Backup could not be done. ERROR suspending power on VM " + vmname + " " +vmid  
+	## Resume our VMs, if they were individually paused, and if they were originaly ON.
+	if SUSPEND == 1 and vmpwrstate == "on" :
+		print time.strftime("%Y.%m.%d.%H:%M:%S") + " - INFO: Resuming VM " + vmname + " " +vmid   
+		resume_result = subprocess.call("ssh root@" + ESXI + " \'vim-cmd vmsvc/power.on " + " " + vmid + "\'", shell=True)
+		if resume_result !=  0 :
+			print time.strftime("%Y.%m.%d.%H:%M:%S") + " - ERROR: " + resume.result + " resuming VM " + vmname + " " +vmid  
+	print time.strftime("%Y.%m.%d.%H:%M:%S") + " - INFO: End processing files for " + vmname + " " +vmid + " ----------<<<"
 
 
 ### 
@@ -418,20 +430,19 @@ for curent.vm in vmdata2d :
 
 OPRESULT = 0
 if SUSPEND == 0 :
-   for curent.vm in vmdata2d : 
-    	vmid=curent.vm[0]
-	    dir=curent.vm[1]
+	for curent.vm in vmdata2d : 
+		vmid=curent.vm[0]
+		vmdir=curent.vm[1]
 		vmname=curent.vm[2]
-      	if curent.vm[3] = "on" :
-        	print time.strftime("%Y.%m.%d.%H:%M:%S") + " - Resuming VM " + vmname + " " +vmid  
-         	#ssh root@$ESXI "vim-cmd vmsvc/power.on $vmid" 
-         	resume.result = subprocess.call("ssh root@" + ESXI + " \'vim-cmd vmsvc/power.on " + " " + vmid + "\'", shell=True)
-         	if resume.result != 0 :
-            	print time.strftime("%Y.%m.%d.%H:%M:%S") + " - ERROR " + resume.result + "resuming VM " + vmname + " " +vmid 
-            	OPRESULT = OPRESULT +1 
-		else:
-	    	OPRESULT = OPRESULT +1 
-      
+		vmpwrstate=curent.vm[3]
+		if vmpwrstate == "on" :
+			print time.strftime("%Y.%m.%d.%H:%M:%S") + " - INFO: Resuming VM " + vmname + " " +vmid  
+         		#ssh root@$ESXI "vim-cmd vmsvc/power.on $vmid" 
+			resume.result = subprocess.call("ssh root@" + ESXI + " \'vim-cmd vmsvc/power.on " + " " + vmid + "\'", shell=True)
+			if resume.result != 0 :
+				print time.strftime("%Y.%m.%d.%H:%M:%S") + " - ERROR: " + resume.result + "resuming VM " + vmname + " " +vmid 
+				OPRESULT = OPRESULT +1 
+		
 
 if OPRESULT == 0  and SUSPEND == 1 :
 	delete.lock.file = TRUE
@@ -440,7 +451,7 @@ if OPRESULT == 0  and SUSPEND == 1 :
 if os.path.isfile(POSCRIPT) :
    subprocess.call(POSCRIPT, shell=True)
 else:
-   print time.strftime("%Y.%m.%d.%H:%M:%S") + " - WARNING: post script invalid or empty: " + POSCRIPT + ". Processing will continue anyway."
+   print time.strftime("%Y.%m.%d.%H:%M:%S") + " - WARNING: post execute script invalid or empty: " + POSCRIPT + ". Processing will continue anyway."
    cleanexit(0)
 
 
